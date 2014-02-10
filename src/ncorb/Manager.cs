@@ -7,23 +7,54 @@ using System.Threading.Tasks;
 
 namespace ncorb
 {
-    class Manager
+    public class Manager
     {
         private static readonly string NAME = typeof(Manager).Name;
 
         private ContentSource _contentSource;
 
-        static void Main(string[] args)
+        public TransformOptions Options { get; private set; }
+
+        public static void Main(string[] args)
         {
-            var m = new Manager();
-            m.PrepareContentSource();
             if (args.Length < 3)
             {
                 usage();
                 return;
             }
 
+            // gather inputs
+            Uri connectionUri = new Uri(args[0]);
+            string collection = args[1];
+
+            Manager tm = new Manager(connectionUri, collection);
+
+            // options
+            TransformOptions options = tm.Options;
+
+            options.ProcessModule = args[2];
+
+            if (args.Length > 3 && args[3] != string.Empty)
+                options.ThreadCount = int.Parse(args[3]);
+            if (args.Length > 4 && args[4] != string.Empty)
+                options.UrisModule = args[4];
+            if (args.Length > 5 && args[5] != string.Empty)
+                options.ModuleRoot = args[5];
+            if (args.Length > 6 && args[6] != string.Empty)
+                options.ModulesDatabase = args[6];
+            if (args.Length > 7 && args[7] != string.Empty)
+            {
+                if (args[7] == "false" || args[7] == "0")
+                    options.ShouldDoInstall = false;
+            }
+            tm.Run();
+
             Console.ReadLine();
+        }
+
+        public Manager(Uri connectionUri, string collection)
+        {
+            Options = new TransformOptions();
         }
 
         private static void usage()
@@ -39,9 +70,11 @@ namespace ncorb
 
         private void PrepareContentSource()
         {
-            Uri connectionUri = new Uri("http://localhost:8035");
+            Uri connectionUri = new Uri("xcc://localhost:8035");
             bool ssl = connectionUri.Scheme == "xccs";
             _contentSource = ContentSourceFactory.NewContentSource(connectionUri);
+
+            // TODO: ssl
             //_contentSource = 
               //  ssl ? 
                 //    ContentSourceFactory.NewContentSource(connectionUri, newTrustAnyoneOptions())
